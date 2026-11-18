@@ -1,0 +1,146 @@
+{
+  "identity": "myderr@quark-share",
+  "name": "Quark Share Resolver",
+  "version": "0.2.1",
+  "minAppVersion": "0.6.8",
+  "description": "浏览夸克网盘分享目录，选择所需文件后转存到指定目录并返回临时下载直链，完成后自动清理。",
+  "resolvers": [
+    {
+      "match": {
+        "urls": [
+          "*://pan.quark.cn/s/*"
+        ]
+      },
+      "entry": "resolver.js",
+      "timeoutMs": 30000,
+      "multi": true
+    }
+  ],
+  "hooks": {
+    "entry": "resolver.js",
+    "events": [
+      "onDone",
+      "onError",
+      "onCancel"
+    ],
+    "match": {
+      "urls": [
+        "*://pan.quark.cn/s/*"
+      ]
+    }
+  },
+  "main": {
+    "entry": "main.js",
+    "background": true,
+    "events": [
+      "onDone",
+      "onError",
+      "onCancel"
+    ]
+  },
+  "contributes": {
+    "views": [
+      {
+        "id": "cleanup",
+        "title": "夸克清理",
+        "location": "activity"
+      }
+    ],
+    "pageScripts": [
+      {
+        "id": "share-download",
+        "title": "用 FluxDown 下载夸克分享",
+        "matches": ["https://pan.quark.cn/s/*"],
+        "js": ["page-download.js"],
+        "world": "isolated",
+        "allFrames": false
+      }
+    ]
+  },
+  "permissions": [
+    "background",
+    "tasks",
+    "pageScripts"
+  ],
+  "settings": [
+    {
+      "key": "cookie",
+      "title": "夸克网盘 Cookie",
+      "description": "粘贴 pan.quark.cn 登录后的完整 Cookie（支持多行长文本）。解析、转存和清理统一使用此账号。",
+      "type": "string",
+      "widget": "textarea",
+      "required": true,
+      "localizations": {
+        "zh": {
+          "title": "夸克网盘 Cookie",
+          "description": "粘贴 pan.quark.cn 登录后的完整 Cookie（支持多行长文本）。解析、转存和清理统一使用此账号。"
+        },
+        "en": {
+          "title": "Quark Drive Cookie",
+          "description": "Paste the full Cookie from your signed-in pan.quark.cn session. Multiple lines are supported. This account is used to resolve links, save files, and clean up temporary copies."
+        }
+      }
+    },
+    {
+      "key": "targetFolderId",
+      "title": "目标目录 ID",
+      "description": "开始转存前需填写预先创建的目标目录 fid，根目录为 0。",
+      "type": "string",
+      "widget": "text",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "required": false,
+      "localizations": {
+        "zh": {
+          "title": "目标目录 ID",
+          "description": "开始转存前需填写预先创建的目标目录 fid，根目录为 0。"
+        },
+        "en": {
+          "title": "Destination folder ID",
+          "description": "Enter the fid of an existing Quark folder before saving files. Use 0 for the root folder."
+        }
+      }
+    },
+    {
+      "key": "maxFiles",
+      "title": "最多列出文件数",
+      "description": "预览时最多列出当前分享目录中的多少个直属文件，不递归子文件夹。",
+      "type": "number",
+      "widget": "number",
+      "min": 1,
+      "max": 1000,
+      "default": "200",
+      "required": true,
+      "localizations": {
+        "zh": {
+          "title": "最多列出文件数",
+          "description": "预览时最多列出当前分享目录中的多少个直属文件，不递归子文件夹。"
+        },
+        "en": {
+          "title": "Maximum files to display",
+          "description": "Limit the number of files shown from the current shared folder. Subfolders are not scanned recursively."
+        }
+      }
+    },
+    {
+      "key": "cleanupIntervalHours",
+      "title": "后台清理间隔（小时）",
+      "description": "定期清理失败或被取消后残留的夸克临时转存文件。",
+      "type": "number",
+      "widget": "number",
+      "min": 1,
+      "max": 168,
+      "default": "6",
+      "required": true,
+      "localizations": {
+        "zh": {
+          "title": "后台清理间隔（小时）",
+          "description": "定期清理失败或被取消后残留的夸克临时转存文件。"
+        },
+        "en": {
+          "title": "Background cleanup interval (hours)",
+          "description": "How often to check for temporary Quark copies left behind by failed or canceled downloads."
+        }
+      }
+    }
+  ]
+}
