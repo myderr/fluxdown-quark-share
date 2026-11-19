@@ -93,7 +93,7 @@ function taskRecord(files, overrides = {}) {
 
 test("manifest targets FluxDown 0.6.8 and declares localized settings", () => {
   assert.equal(manifest.identity, "myderr@quark-share");
-  assert.equal(manifest.version, "0.2.1");
+  assert.equal(manifest.version, "0.2.2");
   assert.equal(manifest.minAppVersion, "0.6.8");
   assert.equal(manifest.resolvers[0].timeoutMs, 30000);
   assert.equal(manifest.resolvers[0].multi, true);
@@ -193,8 +193,10 @@ test("first resolve pass returns a manifest without transferring any file", asyn
   assert.equal(queued.calls.length, 2);
 });
 
-test("second resolve pass transfers only the selected manifest item and records cleanup", async () => {
-  const queued = makeFetchQueue([
+const downloadUrl = "https://dl-pc-zb.drive.quark.cn/two.apk?signature=A%2Fb%3D&key=2&key=1";
+
+function makeSelectedDownloadQueue(url) {
+  return makeFetchQueue([
     { code: 0, data: { stoken: "stoken-1" } },
     { code: 0, data: { list: [
       { dir: false, file: true, fid: "f1", file_name: "one.apk", share_fid_token: "t1", size: 101 },
@@ -202,8 +204,12 @@ test("second resolve pass transfers only the selected manifest item and records 
     ] } },
     { code: 0, data: { task_id: "save-task" } },
     { code: 0, data: { status: 2, save_as: { save_as_top_fids: ["saved-2"] } } },
-    { code: 0, data: [{ fid: "saved-2", download_url: "https://download.example/two.apk" }] },
+    { code: 0, data: [{ fid: "saved-2", download_url: url }] },
   ]);
+}
+
+test("second resolve pass transfers only the selected manifest item and records cleanup", async () => {
+  const queued = makeSelectedDownloadQueue(downloadUrl);
   const store = makeStorage({ quarkCleanupRegistryV2: JSON.stringify({
     tasks: { "task-42": taskRecord([{ fid: "previous", fileName: "two.apk" }]) },
   }) });
@@ -217,7 +223,8 @@ test("second resolve pass transfers only the selected manifest item and records 
     url: "https://pan.quark.cn/s/share-1",
     resolverItem: "f2",
   }));
-  assert.equal(result.url, "https://download.example/two.apk");
+  assert.equal(result.url, downloadUrl);
+  assert.equal(result.extraHeaders.Cookie, "cookie-value");
   assert.equal(result.fileName, "two.apk");
   assert.deepEqual(JSON.parse(queued.calls[2].body).fid_list, ["f2"]);
   const registry = JSON.parse(store.values.get("quarkCleanupRegistryV2"));
@@ -225,6 +232,41 @@ test("second resolve pass transfers only the selected manifest item and records 
     { fid: "previous", fileName: "two.apk" },
     { fid: "saved-2", fileName: "two.apk" },
   ]);
+});
+
+test("only the trusted Quark HTTPS download host can receive the configured Cookie", async (t) => {
+  const task = { taskId: "task-42", url: "https://pan.quark.cn/s/share-1", resolverItem: "f2" };
+  const invalidUrls = {
+    "external host": "https://download.example/two.apk?signature=private",
+    "unverified Quark host": "https://unverified.quark.cn/two.apk",
+    "lookalike host": "https://dl-pc-zb.drive.quark.cn.example/two.apk",
+    "plaintext": "http://dl-pc-zb.drive.quark.cn/two.apk",
+    "scheme-relative": "//dl-pc-zb.drive.quark.cn/two.apk",
+    "non-default port": "https://dl-pc-zb.drive.quark.cn:444/two.apk",
+    "userinfo on trusted host": "https://user:pass@dl-pc-zb.drive.quark.cn/two.apk",
+    "trusted host disguised as userinfo": "https://dl-pc-zb.drive.quark.cn@download.example/two.apk",
+    "backslash in URL": "https://dl-pc-zb.drive.quark.cn\\@download.example/two.apk",
+    "control character in URL": "https://dl-pc-zb.drive.quark.cn/two.apk\t",
+  };
+
+  for (const [label, url] of Object.entries(invalidUrls)) {
+    await t.test(label, async () => {
+      const queued = makeSelectedDownloadQueue(url);
+      const store = makeStorage();
+      const context = loadResolver({
+        settings: { cookie: "cookie-value", targetFolderId: "target-1" },
+        fetch: queued.fetchImpl,
+        storage: store.storage,
+      });
+
+      await assert.rejects(context.resolve(task), {
+        message: "Quark API returned an untrusted download URL. Check for a plugin update.",
+      });
+      assert.deepEqual(JSON.parse(store.values.get("quarkCleanupRegistryV2")).tasks[task.taskId].files, [
+        { fid: "saved-2", fileName: "two.apk" },
+      ]);
+    });
+  }
 });
 
 test("onError records backoff instead of deleting a transfer needed by retry", async () => {

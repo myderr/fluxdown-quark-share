@@ -1,7 +1,7 @@
 {
   "identity": "myderr@quark-share",
   "name": "Quark Share Resolver",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "minAppVersion": "0.6.8",
   "description": "浏览夸克网盘分享目录，选择所需文件后转存到指定目录并返回临时下载直链，完成后自动清理。",
   "resolvers": [

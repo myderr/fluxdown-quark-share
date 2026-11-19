@@ -11,6 +11,8 @@
 
 插件不提供登录界面。解析、转存和清理都使用设置中的 Cookie，不使用浏览器任务附带的 Cookie，避免不同账号之间无法清理。Cookie 过期后请从同一账号重新获取；切换账号前请先处理旧账号的临时转存。
 
+附件下载的初始地址仅接受 `https://dl-pc-zb.drive.quark.cn`。遇到其他主机时，插件会中止解析并保留临时转存的清理记录。
+
 Cookie 等同于登录会话凭据，请勿提交到 Git、截图或分享给他人。
 
 ## 从夸克网页发送下载
@@ -72,9 +74,9 @@ powershell -ExecutionPolicy Bypass -File scripts/package-plugin.ps1
 ## 打包
 
 - 插件 ID：`myderr@quark-share`
-- 当前版本：`0.2.1`
+- 当前版本：`0.2.2`
 - 最低 FluxDown 版本：`0.6.8`（支持市场要求的双语设置字段）
-- 输出：`dist/quark-share-0.2.1.fxplug`
+- 输出：`dist/quark-share-0.2.2.fxplug`
 - 包内文件：`manifest.json`、`resolver.js`、`main.js`、`page-download.js`
 
 在插件作者仓库的正式 GitHub Release 上传唯一的 `.fxplug` 附件。作者仓库登记后，新版本由官方索引自动校验和收录，无需手动修改索引分片。

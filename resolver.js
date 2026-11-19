@@ -59,6 +59,12 @@
     };
   }
 
+  function isTrustedDownloadUrl(url) {
+    // QuickJS provides no URL API. Match the full HTTPS authority and preserve the signed URL verbatim.
+    return /^https:\/\/dl-pc-zb\.drive\.quark\.cn(?::443)?(?=[/?#]|$)/i.test(url)
+      && !/[\s\\\x00-\x1f\x7f]/.test(url);
+  }
+
   function normalizeMaxFiles(value) {
     var limit = value === undefined || value === null || value === "" ? 200 : Number(value);
     if (!isFinite(limit) || Math.floor(limit) !== limit || limit < 1 || limit > 1000) {
@@ -518,6 +524,9 @@
     var link = null;
     for (var i = 0; i < links.length; i += 1) if (!link || links[i].fid === savedFid) link = links[i];
     if (!link || !link.url) throw new Error("Quark API did not return a download link");
+    if (!isTrustedDownloadUrl(link.url)) {
+      throw new Error("Quark API returned an untrusted download URL. Check for a plugin update.");
+    }
     var result = {
       url: link.url,
       fileName: fileName,

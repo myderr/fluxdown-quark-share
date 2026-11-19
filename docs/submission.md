@@ -3,7 +3,7 @@
 ## 插件信息
 
 - Identity：`myderr@quark-share`
-- 版本：`0.2.1`
+- 版本：`0.2.2`
 - 最低应用版本：`0.6.8`
 - 权限：`background`、`tasks`、`pageScripts`
 - 包内文件：`manifest.json`、`resolver.js`、`main.js`、`page-download.js`
@@ -14,7 +14,7 @@
 
 1. 使用插件设置中的 Cookie 访问夸克网盘。
 2. 分页读取分享目录的直属文件，通过 `multi: true` 和 `manifest` 交给 FluxDown 展示文件选择器。
-3. 用户确认后，第二段解析只转存选中的 fid，并返回临时下载直链。
+3. 用户确认后，第二段解析只转存选中的 fid，校验直链使用 HTTPS 且指向已确认的下载主机，再附带 Cookie 返回直链。
 4. 多个选中文件会由 FluxDown 创建任务组，各自独立解析和清理。
 
 插件不递归子文件夹，最多预览 1000 个直属文件。目标目录必须提前创建，根目录填写 `0`。
@@ -62,7 +62,7 @@ powershell -ExecutionPolicy Bypass -File scripts/package-plugin.ps1
 - `onDone` / `onCancel` 清理；
 - `onError` 退避而不误删；
 - 清理失败保留记录；
-- 只使用设置中的 Cookie；
+- 只使用设置中的 Cookie，拒绝不受信任的下载直链并保留清理记录；
 - 后台清扫跳过活动、暂缓和状态未知的任务；
 - 页面按钮的作用范围、URL 传递以及失败后重试。
 
@@ -70,9 +70,9 @@ powershell -ExecutionPolicy Bypass -File scripts/package-plugin.ps1
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/package-plugin.ps1
-(Get-FileHash .\dist\quark-share-0.2.1.fxplug -Algorithm SHA256).Hash.ToLower()
+(Get-FileHash .\dist\quark-share-0.2.2.fxplug -Algorithm SHA256).Hash.ToLower()
 ```
 
-生成 `dist/quark-share-0.2.1.fxplug` 后，在作者仓库发布 `v0.2.1`，只上传这一个 `.fxplug` 附件。首次登记作者仓库时，向官方索引提交只修改 `registry.json` 的 PR；登记完成后，索引会自动读取后续的正式 GitHub Release 并生成版本分片。
+生成 `dist/quark-share-0.2.2.fxplug` 后，在作者仓库发布 `v0.2.2`，只上传这一个 `.fxplug` 附件。首次登记作者仓库时，向官方索引提交只修改 `registry.json` 的 PR；登记完成后，索引会自动读取后续的正式 GitHub Release 并生成版本分片。
 
 发布前必须确认未包含真实 Cookie、下载直链或本地配置。
